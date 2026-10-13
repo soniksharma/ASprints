@@ -189,7 +189,13 @@
 - [x] **Step 5: Perform live smoke checks** for local server health, Ollama model status and one real explanation if the model service is available, a permitted public website scan, report print preview, backup export/import, and localhost-only binding.
 - [x] **Step 6: Inspect the finished UI in a browser at desktop and mobile widths**, including keyboard navigation and reduced-motion behavior; correct visible issues.
 - [x] **Step 7: Commit** — Task 7 is included in the integrated prototype commit with the product deliverables.
-- [ ] **Step 8: Create the GitHub repository `soniksharma/ASprints` and push the verified `main` branch**; confirm the remote repository URL and pushed commit SHA.
+- [x] **Step 8: Create the public GitHub repository `soniksharma/ASprints` and push the verified `main` branch**; confirmed `https://github.com/soniksharma/ASprints` contains `README.md` on `main` at commit `914a60cc28a3d31f022a1930055f81799ac0ac18`.
+
+## Final review fixes
+
+- Demo reports now carry a visible sample-data warning in both the application preview and printable output.
+- Failed backup imports remove their partially created audit; regression coverage verifies cleanup after a simulated storage failure.
+- Final verification: 53 Python tests and the complete Node/Chromium test suite passed.
 
 ## Self-Review
 
