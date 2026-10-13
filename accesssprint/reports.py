@@ -45,9 +45,10 @@ def render_report_html(report: dict) -> str:
     page_rows = "".join(f"<tr><td>{e(p['label'])}</td><td>{e(p['url'])}</td><td>{e(p['status'])}</td></tr>" for p in report["coverage"]["pages"])
     finding_rows = "".join(f"<article><h3>{e(f['help'])}</h3><p>{e(f['impact'])} · {e(f['page_label'])} · {e(f['rule_id'])} · {e(f['review_status'].replace('_', ' '))}</p><p>{e(f['description'])}</p>{'<p>Auditor note: ' + e(f['note']) + '</p>' if f.get('note') else ''}</article>" for f in report["findings"])
     check_rows = "".join(f"<li>{e(c['label'])}: {e(c['status'].replace('_', ' '))}{' — ' + e(c['note']) if c.get('note') else ''}</li>" for c in report["manual_checks"])
+    sample_banner = '<div class="sample-banner">SAMPLE DATA / ILLUSTRATIVE ONLY — no live site was scanned.</div>' if report.get("demo") else ""
     return f"""<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>{e(report['client_name'])} accessibility review</title>
 <style>body{{font:16px/1.5 system-ui,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;color:#18221b}}h1,h2{{line-height:1.2}}small,footer{{color:#526057}}article,.metrics{{border:1px solid #cbd4cc;padding:14px;margin:12px 0}}.metrics{{display:flex;justify-content:space-around}}@media print{{body{{margin:0;max-width:none}}}}</style>
-<header><p>ACCESSIBILITY REVIEW / HUMAN-REVIEWED</p><h1>{e(report['client_name'])}</h1><h2>{e(report['audit_name'])}</h2><p>{e(report['scope'])}</p><p>Prepared by {e(report['auditor'])} · {e(report['generated_at'])}</p></header>
+<header>{sample_banner}<p>ACCESSIBILITY REVIEW / HUMAN-REVIEWED</p><h1>{e(report['client_name'])}</h1><h2>{e(report['audit_name'])}</h2><p>{e(report['scope'])}</p><p>Prepared by {e(report['auditor'])} · {e(report['generated_at'])}</p></header>
 <section class="metrics"><div>{report['coverage']['scanned']}/{report['coverage']['total']} pages scanned</div><div>{report['summary']['findings']} findings</div><div>{report['summary']['unreviewed']} awaiting review</div><div>{report['summary']['unresolved_high_priority']} unresolved high priority</div></section>
 <h2>Page coverage</h2><table><thead><tr><th>Page</th><th>URL</th><th>Status</th></tr></thead><tbody>{page_rows}</tbody></table><h2>Findings for review</h2>{finding_rows or '<p>No automated findings recorded.</p>'}<h2>Hands-on checks</h2><ul>{check_rows}</ul><footer><p>{e(report['disclaimer'])}</p><ul>{''.join('<li>'+e(item)+'</li>' for item in report['limitations'])}</ul></footer></html>"""
 
@@ -126,29 +127,33 @@ def validate_backup(payload: dict) -> dict:
 def import_backup(audits: AuditService, store: Store, payload: dict) -> dict:
     audit = payload["audit"]
     created = audits.create_audit({key: audit[key] for key in ("name", "client_name", "base_url", "auditor", "scope", "pages")})
-    store.set_demo(created["id"], False)
-    page_by_url = {page["url"]: page for page in created["pages"]}
-    for check in audit["manual_checks"]:
-        match = next((item for item in created["manual_checks"] if item["check_key"] == check["check_key"]), None)
-        if match:
-            audits.set_manual_check(created["id"], match["id"], check["status"], check.get("note", ""))
-    run_ids = {}
-    for index, run in enumerate(audit["scan_runs"]):
-        new_id = str(uuid.uuid4()); run_ids[run.get("id", str(index))] = new_id
-        run_status = "failed" if run["status"] == "running" else run["status"]
-        result = run["result"]
-        if run["status"] == "running":
-            result = {**result, "status": "failed", "import_note": "The backup was taken while this scan was still running."}
-        store.create_scan_run({"id": new_id, "audit_id": created["id"], "status": run_status,
-                               "started_at": run.get("started_at") or utc_now(), "completed_at": run.get("completed_at"),
-                               "axe_version": run.get("axe_version"), "model_tag": run.get("model_tag"), "result": result})
-    for item in audit["findings"]:
-        page = page_by_url.get(item.get("page_url"))
-        scan_id = run_ids.get(item.get("scan_id"))
-        if not page or not scan_id:
-            continue
-        store.create_finding({"id": str(uuid.uuid4()), "scan_id": scan_id, "page_id": page["id"], "rule_id": item["rule_id"],
-                              "impact": item["impact"], "help": item.get("help", ""), "description": item.get("description", ""),
-                              "help_url": item.get("help_url", ""), "nodes": item["nodes"], "review_status": item["review_status"],
-                              "note": item.get("note", ""), "created_at": item.get("created_at") or utc_now()})
-    return audits.get_audit(created["id"])
+    try:
+        store.set_demo(created["id"], False)
+        page_by_url = {page["url"]: page for page in created["pages"]}
+        for check in audit["manual_checks"]:
+            match = next((item for item in created["manual_checks"] if item["check_key"] == check["check_key"]), None)
+            if match:
+                audits.set_manual_check(created["id"], match["id"], check["status"], check.get("note", ""))
+        run_ids = {}
+        for index, run in enumerate(audit["scan_runs"]):
+            new_id = str(uuid.uuid4()); run_ids[run.get("id", str(index))] = new_id
+            run_status = "failed" if run["status"] == "running" else run["status"]
+            result = run["result"]
+            if run["status"] == "running":
+                result = {**result, "status": "failed", "import_note": "The backup was taken while this scan was still running."}
+            store.create_scan_run({"id": new_id, "audit_id": created["id"], "status": run_status,
+                                   "started_at": run.get("started_at") or utc_now(), "completed_at": run.get("completed_at"),
+                                   "axe_version": run.get("axe_version"), "model_tag": run.get("model_tag"), "result": result})
+        for item in audit["findings"]:
+            page = page_by_url.get(item.get("page_url"))
+            scan_id = run_ids.get(item.get("scan_id"))
+            if not page or not scan_id:
+                continue
+            store.create_finding({"id": str(uuid.uuid4()), "scan_id": scan_id, "page_id": page["id"], "rule_id": item["rule_id"],
+                                  "impact": item["impact"], "help": item.get("help", ""), "description": item.get("description", ""),
+                                  "help_url": item.get("help_url", ""), "nodes": item["nodes"], "review_status": item["review_status"],
+                                  "note": item.get("note", ""), "created_at": item.get("created_at") or utc_now()})
+        return audits.get_audit(created["id"])
+    except Exception:
+        store.delete_audit(created["id"])
+        raise

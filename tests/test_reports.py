@@ -36,6 +36,35 @@ class ReportTests(unittest.TestCase):
         self.assertIn("&lt;script&gt;", html)
         self.assertNotIn("<script>alert(1)</script>", html)
 
+    def test_demo_report_is_prominently_marked_as_sample_in_print_html(self):
+        from accesssprint.reports import render_report_html
+        self.store.set_demo(self.audit["id"], True)
+        html = render_report_html(build_report(self.audits.get_audit(self.audit["id"])))
+        self.assertIn("SAMPLE DATA / ILLUSTRATIVE ONLY", html)
+        self.assertIn("no live site was scanned", html)
+
+    def test_backup_import_removes_partial_audit_after_storage_failure(self):
+        page = self.audit["pages"][0]
+        scan_id = str(uuid.uuid4())
+        self.store.create_scan_run({"id": scan_id, "audit_id": self.audit["id"], "status": "completed",
+                                    "started_at": "2026-10-13T12:00:00Z", "result": {"pages": []}})
+        self.store.create_finding({"id": str(uuid.uuid4()), "scan_id": scan_id, "page_id": page["id"],
+                                   "rule_id": "image-alt", "impact": "serious", "help": "Add alt text",
+                                   "description": "Missing alternative text.", "nodes": [],
+                                   "review_status": "needs_review", "note": ""})
+        backup = validate_backup(export_backup(self.audits.get_audit(self.audit["id"])))
+        audits_before = len(self.audits.list_audits())
+        original_create_finding = self.store.create_finding
+        def fail_finding(record):
+            raise RuntimeError("simulated database failure")
+        self.store.create_finding = fail_finding
+        try:
+            with self.assertRaisesRegex(RuntimeError, "simulated database failure"):
+                import_backup(self.audits, self.store, backup)
+        finally:
+            self.store.create_finding = original_create_finding
+        self.assertEqual(len(self.audits.list_audits()), audits_before)
+
     def test_backup_round_trip_creates_a_new_audit_with_reviews(self):
         backup = export_backup(self.audits.get_audit(self.audit["id"]))
         checked = validate_backup(backup)
