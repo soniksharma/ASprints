@@ -111,11 +111,11 @@
 
 **Interfaces:**
 - `create_server(host=config.DEFAULT_HOST, port=8000, data_dir=...)` returns a loopback-only `ThreadingHTTPServer`.
-- JSON API: `GET /api/health`, `GET/POST /api/audits`, `GET/PATCH/DELETE /api/audits/{id}`, `POST /api/audits/{id}/archive`, `POST /api/audits/{id}/scans`, `GET /api/scans/{id}`, `GET /api/audits/{id}/scans/compare?baseline={id}&current={id}`, `PATCH /api/audits/{id}/findings/{finding_id}`, `PATCH /api/audits/{id}/manual-checks/{check_id}`, and `POST /api/ai/explain`.
-- `OllamaClient(base_url, model, opener=...)` exposes `status()` and `explain_finding(finding)`. The client only accepts loopback base URLs and a bounded structured response.
+- JSON API: `GET /api/health`, `GET/POST /api/audits`, `GET/PATCH/DELETE /api/audits/{id}`, `POST /api/audits/{id}/archive`, `POST /api/audits/{id}/scans`, `GET /api/scans/{id}`, `GET /api/audits/{id}/scans/compare?baseline={id}&current={id}`, `PATCH /api/audits/{id}/findings/{finding_id}`, `PATCH /api/audits/{id}/manual-checks/{check_id}`, `GET/POST /api/settings`, `POST /api/ai/test`, and `POST /api/ai/explain`.
+- `OllamaClient(base_url, model, opener=...)` exposes `status()`, `test_connection()`, and `explain_finding(finding)`. The client only accepts loopback base URLs and a bounded structured response; its default model is `gemma4:e4b`.
 - `ScanService` persists a running scan, invokes the worker without a shell, stores per-page outcomes, normalizes findings, and records a completed/partial/failed state.
 
-- [ ] **Step 1: Write failing API and service tests** for route methods including archive and compare, malformed JSON, oversized bodies, unknown audit IDs, invalid statuses, safe subprocess argument passing, scan persistence, offline Ollama, missing model, timeout, malformed model output, and fixed-size request context.
+- [ ] **Step 1: Write failing API and service tests** for route methods including archive, compare, settings and model test, malformed JSON, oversized bodies, unknown audit IDs, invalid statuses, safe subprocess argument passing, scan persistence, offline Ollama, missing model, timeout, malformed model output, and fixed-size request context.
 - [ ] **Step 2: Run `python -m unittest tests.test_api tests.test_scans tests.test_ollama -v`** and verify the expected missing-module failures.
 - [ ] **Step 3: Implement API validation and storage wiring** with JSON-only responses, request size limits, safe static-file path resolution, no shell invocation, and useful 4xx/5xx errors.
 - [ ] **Step 4: Implement scan lifecycle and Ollama client**; do not let AI responses mutate findings, review state, scan status, or severity.

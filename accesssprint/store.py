@@ -92,6 +92,10 @@ class Store:
                     payload_json TEXT NOT NULL DEFAULT '{}',
                     created_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                );
                 CREATE INDEX IF NOT EXISTS idx_pages_audit ON pages(audit_id, ordinal);
                 CREATE INDEX IF NOT EXISTS idx_scans_audit ON scan_runs(audit_id, started_at);
                 CREATE INDEX IF NOT EXISTS idx_findings_scan ON findings(scan_id, impact);
@@ -267,3 +271,13 @@ class Store:
     def close(self) -> None:
         with self._lock:
             self.connection.close()
+
+    def get_setting(self, key: str, default: str = "") -> str:
+        with self._lock:
+            row = self.connection.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+            return row["value"] if row else default
+
+    def set_setting(self, key: str, value: str) -> None:
+        with self._lock, self.connection:
+            self.connection.execute("INSERT INTO settings(key,value) VALUES(?,?) "
+                                    "ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key, value))

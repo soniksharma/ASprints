@@ -77,6 +77,18 @@ class AuditServiceTests(unittest.TestCase):
         with self.assertRaises(AuditError):
             self.audits.set_finding_review(audit["id"], "finding-a", "ignored", "")
 
+    def test_rejects_non_string_review_statuses_as_validation_errors(self):
+        audit = self.audits.create_audit(self.payload)
+        self.store.create_scan_run({"id": "scan-a", "audit_id": audit["id"], "status": "completed",
+                                    "started_at": "2026-10-13T00:00:00Z", "result": {}})
+        self.store.create_finding({"id": "finding-a", "scan_id": "scan-a", "page_id": audit["pages"][0]["id"],
+                                   "rule_id": "color-contrast", "impact": "serious", "help": "Fix contrast",
+                                   "description": "Text must contrast", "nodes": []})
+        with self.assertRaises(AuditError):
+            self.audits.set_finding_review(audit["id"], "finding-a", ["fixed"], "")
+        with self.assertRaises(AuditError):
+            self.audits.set_manual_check(audit["id"], audit["manual_checks"][0]["id"], None, "")
+
     def test_updates_finding_and_manual_check_status_and_notes(self):
         audit = self.audits.create_audit(self.payload)
         self.store.create_scan_run({"id": "scan-a", "audit_id": audit["id"], "status": "completed",
@@ -111,12 +123,16 @@ class AuditServiceTests(unittest.TestCase):
                                             ("scan-new", "new-a", "fixed")):
             self.store.create_finding({"id": finding_id, "scan_id": scan_id, "page_id": audit["pages"][0]["id"],
                                        "rule_id": "color-contrast", "impact": "serious", "help": "Fix contrast",
-                                       "description": "Text must contrast", "nodes": [], "review_status": status})
+                                       "description": "Text must contrast", "nodes": [
+                                           {"target": ["main p", "span.label"], "html": "<p>text</p>"}
+                                       ], "review_status": status})
         result = self.audits.compare_scans(audit["id"], "scan-old", "scan-new")
         self.assertEqual(result["baseline"]["total"], 1)
         self.assertEqual(result["current"]["total"], 1)
         self.assertEqual(result["by_impact"]["serious"], {"before": 1, "after": 1})
         self.assertEqual(result["fixed"], 1)
+        self.assertEqual(result["new"], 0)
+        self.assertEqual(result["resolved"], 0)
 
 
 if __name__ == "__main__":

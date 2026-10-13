@@ -21,6 +21,7 @@ def main() -> None:
     except KeyboardInterrupt:
         print("\nStopping AccessSprint…")
     finally:
+        server.close_application()
         server.server_close()
 
 

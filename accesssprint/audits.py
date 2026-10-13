@@ -121,7 +121,7 @@ class AuditService:
             raise AuditError("Audit not found.")
 
     def set_finding_review(self, audit_id: str, finding_id: str, status: str, note: str) -> dict:
-        if status not in FINDING_STATUSES:
+        if not isinstance(status, str) or status not in FINDING_STATUSES:
             raise AuditError("Choose a valid finding review status.")
         note = self._validate_text(note, "note", required=False)
         finding = self.store.get_finding(finding_id, audit_id)
@@ -132,7 +132,7 @@ class AuditService:
         return self.store.get_finding(finding_id, audit_id)
 
     def set_manual_check(self, audit_id: str, check_id: str, status: str, note: str) -> dict:
-        if status not in MANUAL_STATUSES:
+        if not isinstance(status, str) or status not in MANUAL_STATUSES:
             raise AuditError("Choose a valid manual check status.")
         note = self._validate_text(note, "note", required=False)
         check = self.store.get_manual_check(check_id, audit_id)
@@ -155,10 +155,18 @@ class AuditService:
                 "before": sum(item["impact"] == impact for item in before),
                 "after": sum(item["impact"] == impact for item in after),
             }
-        before_keys = {(x["rule_id"], x["page_url"], n.get("target", ""))
-                       for x in before for n in x["nodes"]}
-        after_keys = {(x["rule_id"], x["page_url"], n.get("target", ""))
-                      for x in after for n in x["nodes"]}
+        def finding_keys(findings):
+            keys = set()
+            for finding in findings:
+                nodes = finding["nodes"] or [{}]
+                for node in nodes:
+                    target = node.get("target", [])
+                    if isinstance(target, str):
+                        target = [target]
+                    keys.add((finding["rule_id"], finding["page_url"], tuple(str(item) for item in target)))
+            return keys
+        before_keys = finding_keys(before)
+        after_keys = finding_keys(after)
         return {
             "audit_id": audit_id,
             "baseline": {"id": baseline_id, "started_at": runs[baseline_id]["started_at"], "total": len(before)},

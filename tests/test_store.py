@@ -34,6 +34,11 @@ class StoreTests(unittest.TestCase):
         stored = self.store.get_scan_run("scan-1")
         self.assertEqual(stored["result"], payload)
 
+    def test_setting_has_fallback_and_persists_override(self):
+        self.assertEqual(self.store.get_setting("ollama_model", "gemma4:e4b"), "gemma4:e4b")
+        self.store.set_setting("ollama_model", "gemma4:e4b-q4")
+        self.assertEqual(self.store.get_setting("ollama_model", "gemma4:e4b"), "gemma4:e4b-q4")
+
     def test_audit_delete_cascades_to_child_rows(self):
         audit = {"id": "audit-1", "name": "Site", "client_name": "Client",
                  "base_url": "https://example.com", "auditor": "Me", "scope": "Home page"}
