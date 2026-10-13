@@ -1,4 +1,5 @@
 import json
+import http.client
 import tempfile
 import threading
 import time
@@ -78,6 +79,30 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(detail["audit"]["name"], "First audit")
 
+    def test_first_run_provides_an_explicit_sample_audit(self):
+        status, result = self.request("GET", "/api/audits")
+        self.assertEqual(status, 200)
+        demo = next(item for item in result["audits"] if item["demo"])
+        status, detail = self.request("GET", f"/api/audits/{demo['id']}")
+        self.assertEqual(status, 200)
+        self.assertTrue(detail["audit"]["findings"])
+        self.assertTrue(detail["audit"]["scan_runs"][0]["result"]["sample"])
+
+    def test_report_and_backup_endpoints_round_trip_without_overwriting(self):
+        audit = self.create_audit()
+        status, report = self.request("GET", f"/api/audits/{audit['id']}/report")
+        self.assertEqual(status, 200)
+        self.assertIn("not a certification", report["report"]["disclaimer"].lower())
+        self.assertIn("<!doctype html>", report["report"]["html"].lower())
+        status, backup = self.request("GET", f"/api/audits/{audit['id']}/backup")
+        self.assertEqual(status, 200)
+        imported_status, imported = self.request("POST", "/api/backups/import", backup["backup"])
+        self.assertEqual(imported_status, 201)
+        self.assertNotEqual(imported["audit"]["id"], audit["id"])
+        invalid_status, error = self.request("POST", "/api/backups/import", {"formatVersion": 22})
+        self.assertEqual(invalid_status, 400)
+        self.assertIn("version", error["error"])
+
     def test_settings_keep_ollama_loopback_and_default_to_requested_model(self):
         status, settings = self.request("GET", "/api/settings")
         self.assertEqual(status, 200)
@@ -96,8 +121,15 @@ class ApiTests(unittest.TestCase):
     def test_rejects_malformed_and_oversized_json(self):
         status, _ = self.request("POST", "/api/audits", raw=b"{")
         self.assertEqual(status, 400)
-        status, _ = self.request("POST", "/api/audits", raw=b" " * 1_000_001)
-        self.assertEqual(status, 413)
+        connection = http.client.HTTPConnection("127.0.0.1", self.server.server_port, timeout=5)
+        connection.putrequest("POST", "/api/audits")
+        connection.putheader("Content-Type", "application/json")
+        connection.putheader("Content-Length", "1000001")
+        connection.endheaders()
+        response = connection.getresponse()
+        self.assertEqual(response.status, 413)
+        response.read()
+        connection.close()
 
     def test_scan_review_manual_check_archive_and_delete_endpoints(self):
         audit = self.create_audit()
@@ -141,7 +173,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(status, 200)
         status, audits = self.request("GET", "/api/audits")
         self.assertEqual(status, 200)
-        self.assertEqual(audits["audits"], [])
+        self.assertTrue(all(item["demo"] for item in audits["audits"]))
         status, _ = self.request("DELETE", f"/api/audits/{audit['id']}")
         self.assertEqual(status, 204)
 

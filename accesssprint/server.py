@@ -14,7 +14,9 @@ from urllib.parse import parse_qs, unquote, urlsplit
 
 from accesssprint.audits import AuditError, AuditService
 from accesssprint.config import DEFAULT_MODEL, DEFAULT_OLLAMA_URL, DEFAULT_PORT, DEFAULT_HOST, MAX_REQUEST_BYTES
+from accesssprint.demo import ensure_demo_data
 from accesssprint.ollama import OllamaClient, OllamaError
+from accesssprint.reports import build_report, export_backup, import_backup, render_report_html, validate_backup
 from accesssprint.scans import ScanService
 from accesssprint.store import Store
 
@@ -126,7 +128,15 @@ class Handler(BaseHTTPRequestHandler):
                     "model": self.server.store.get_setting("ollama_model", DEFAULT_MODEL),
                 }})
             if method == "GET" and path == "/api/audits":
-                return self.send_json(200, {"audits": self.server.audits.list_audits()})
+                include_archived = query.get("include_archived", [""])[0] == "1"
+                return self.send_json(200, {"audits": self.server.audits.list_audits(include_archived=include_archived)})
+            if method == "POST" and path == "/api/backups/import":
+                body = self._json_body()
+                if body is None:
+                    return True
+                checked = validate_backup(body)
+                audit = import_backup(self.server.audits, self.server.store, checked)
+                return self.send_json(201, {"audit": audit})
             if method == "POST" and path == "/api/audits":
                 body = self._json_body()
                 if body is None:
@@ -156,6 +166,13 @@ class Handler(BaseHTTPRequestHandler):
                         return True
                     scan = self.server.scans.start_scan(audit_id)
                     return self.send_json(202, {"scan": scan})
+                if method == "GET" and action in {"report", "backup"}:
+                    audit = self.server.audits.get_audit(audit_id)
+                    if action == "report":
+                        report = build_report(audit)
+                        report["html"] = render_report_html(report)
+                        return self.send_json(200, {"report": report})
+                    return self.send_json(200, {"backup": export_backup(audit)})
                 if method == "POST" and action == "archive":
                     body = self._json_body()
                     if body is None:
@@ -209,9 +226,9 @@ class Handler(BaseHTTPRequestHandler):
         except AuditError as error:
             status = 404 if "not found" in str(error).lower() else 400
             return self.send_json(status, {"error": str(error)})
-        except (OllamaError, ValueError) as error:
+        except (OllamaError, ValueError, KeyError, TypeError) as error:
             status = error.status_code if isinstance(error, OllamaError) else 400
-            return self.send_json(status, {"error": str(error)})
+            return self.send_json(status, {"error": str(error) or "Backup data is invalid."})
         except Exception as error:
             self.log_message("API error: %s", type(error).__name__)
             return self.send_json(500, {"error": "AccessSprint could not complete that request."})
@@ -254,6 +271,7 @@ def create_server(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, *, data_di
         raise ValueError("AccessSprint can bind only to a loopback address.")
     data_dir = Path(data_dir) if data_dir is not None else default_data_dir()
     store = Store(data_dir / "accesssprint.sqlite3")
+    ensure_demo_data(store)
     server = AccessSprintHTTPServer((host, port), Handler)
     server.store = store
     server.audits = AuditService(store)

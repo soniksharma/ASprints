@@ -1,6 +1,6 @@
 # AccessSprint Product Specification
 
-**Status:** Draft for user review  
+**Status:** Approved prototype specification
 **Date:** 2026-10-13  
 **Product:** AccessSprint (repository: `ASprints`)
 

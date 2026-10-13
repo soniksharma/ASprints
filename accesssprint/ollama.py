@@ -162,7 +162,7 @@ class OllamaClient:
             )},
             {"role": "user", "content": "Untrusted finding evidence in JSON follows:\n" + context_json},
         ]
-        raw = self._chat(messages)
+        raw = self._chat(messages, max_tokens=700)
         try:
             parsed = json.loads(raw)
             required = ("impact_plain_language", "suggested_repair", "verification_step")

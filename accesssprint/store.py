@@ -38,6 +38,7 @@ class Store:
                     auditor TEXT NOT NULL,
                     scope TEXT NOT NULL,
                     archived INTEGER NOT NULL DEFAULT 0,
+                    demo INTEGER NOT NULL DEFAULT 0,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 );
@@ -101,6 +102,9 @@ class Store:
                 CREATE INDEX IF NOT EXISTS idx_findings_scan ON findings(scan_id, impact);
                 CREATE INDEX IF NOT EXISTS idx_events_audit ON audit_events(audit_id, created_at);
             """)
+            audit_columns = {row[1] for row in self.connection.execute("PRAGMA table_info(audits)")}
+            if "demo" not in audit_columns:
+                self.connection.execute("ALTER TABLE audits ADD COLUMN demo INTEGER NOT NULL DEFAULT 0")
 
     def _dict(self, row: sqlite3.Row | None) -> dict[str, Any] | None:
         return dict(row) if row is not None else None
@@ -109,10 +113,10 @@ class Store:
         now = audit.get("created_at") or utc_now()
         with self._lock, self.connection:
             self.connection.execute(
-                "INSERT INTO audits(id,name,client_name,base_url,auditor,scope,archived,created_at,updated_at) "
-                "VALUES(?,?,?,?,?,?,0,?,?)",
+                "INSERT INTO audits(id,name,client_name,base_url,auditor,scope,archived,demo,created_at,updated_at) "
+                "VALUES(?,?,?,?,?,?,0,?,?,?)",
                 (audit["id"], audit["name"], audit["client_name"], audit["base_url"],
-                 audit["auditor"], audit["scope"], now, now),
+                 audit["auditor"], audit["scope"], int(audit.get("demo", False)), now, now),
             )
             self.connection.executemany(
                 "INSERT INTO pages(id,audit_id,url,label,ordinal) VALUES(?,?,?,?,?)",
@@ -133,6 +137,7 @@ class Store:
             if audit is None:
                 return None
             audit["archived"] = bool(audit["archived"])
+            audit["demo"] = bool(audit["demo"])
             audit["pages"] = [dict(row) for row in self.connection.execute(
                 "SELECT * FROM pages WHERE audit_id=? AND active=1 ORDER BY ordinal", (audit_id,))]
             audit["manual_checks"] = [dict(row) for row in self.connection.execute(
@@ -148,7 +153,16 @@ class Store:
         query = "SELECT * FROM audits" + ("" if include_archived else " WHERE archived=0") + " ORDER BY updated_at DESC"
         with self._lock:
             rows = self.connection.execute(query).fetchall()
-            return [{**dict(row), "archived": bool(row["archived"])} for row in rows]
+            return [{**dict(row), "archived": bool(row["archived"]), "demo": bool(row["demo"])} for row in rows]
+
+    def mark_demo(self, audit_id: str) -> None:
+        with self._lock, self.connection:
+            self.connection.execute("UPDATE audits SET demo=1 WHERE id=?", (audit_id,))
+
+    def set_demo(self, audit_id: str, demo: bool) -> None:
+        with self._lock, self.connection:
+            self.connection.execute("UPDATE audits SET demo=?,updated_at=? WHERE id=?",
+                                    (int(demo), utc_now(), audit_id))
 
     def update_audit(self, audit_id: str, fields: dict, pages: list[dict] | None = None) -> bool:
         allowed = {"name", "client_name", "base_url", "auditor", "scope"}

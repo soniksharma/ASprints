@@ -87,8 +87,8 @@ class AuditService:
             raise AuditError("Audit not found.")
         return audit
 
-    def list_audits(self) -> list[dict]:
-        return self.store.list_audits()
+    def list_audits(self, *, include_archived: bool = False) -> list[dict]:
+        return self.store.list_audits(include_archived=include_archived)
 
     def update_audit(self, audit_id: str, payload: dict) -> dict:
         if not isinstance(payload, dict):

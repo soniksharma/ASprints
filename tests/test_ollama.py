@@ -66,6 +66,8 @@ class OllamaClientTests(unittest.TestCase):
         self.assertEqual(result["explanation"], answer)
         self.assertTrue(result["response_valid"])
         self.assertEqual(len(calls), 2)
+        request_payload = json.loads(calls[1].data)
+        self.assertGreaterEqual(request_payload["options"]["num_predict"], 600)
         sent = json.dumps(result["context_sent"])
         self.assertNotIn("<img", sent)
         self.assertLess(len(sent), 3000)

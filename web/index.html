@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0d0c">
+  <meta name="description" content="A local-first accessibility audit workspace for independent web developers.">
+  <title>AccessSprint — Local audit workspace</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to workspace</a>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <button class="brand" type="button" data-action="dashboard" aria-label="AccessSprint workspace home">
+        <span class="brand-mark" aria-hidden="true">A<span>//</span></span>
+        <span class="brand-copy"><strong>ACCESS<span>SPRINT</span></strong><small>LOCAL AUDIT STUDIO</small></span>
+      </button>
+      <div class="rail-label">YOUR WORKSPACE <span>01</span></div>
+      <nav class="rail-nav">
+        <button class="rail-link is-active" data-action="dashboard"><span class="nav-glyph">▤</span><span>Audits</span><kbd>01</kbd></button>
+        <button class="rail-link" data-action="settings"><span class="nav-glyph">⌘</span><span>Model setup</span><i class="nav-pulse" aria-hidden="true"></i></button>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="privacy-card">
+        <span class="privacy-icon" aria-hidden="true">◉</span>
+        <div><strong>LOCAL ONLY</strong><p>Your audit data stays on this computer.</p></div>
+      </div>
+      <div class="sidebar-footer"><span class="online-dot"></span> 127.0.0.1 <span class="footer-version">v0.1 / GEMMA READY?</span></div>
+    </aside>
+
+    <div class="main-column">
+      <header class="topbar">
+        <div class="crumbs"><span>ACCESSSPRINT</span><b>/</b><strong id="crumb-current">AUDIT DESK</strong></div>
+        <div class="topbar-right">
+          <span class="model-indicator" id="model-indicator"><i class="status-dot status-unknown"></i><span>CHECKING LOCAL MODEL</span></span>
+          <button class="icon-button mobile-nav" type="button" data-action="dashboard" aria-label="Go to audit list">A//</button>
+          <button class="avatar-button" type="button" data-action="settings" aria-label="Open local model setup">AS</button>
+        </div>
+      </header>
+      <main id="main-content" class="workspace" tabindex="-1" aria-live="polite"></main>
+    </div>
+  </div>
+
+  <dialog class="audit-dialog" id="audit-dialog" aria-labelledby="dialog-title">
+    <form id="audit-form" method="dialog">
+      <div class="dialog-top"><div><span class="eyebrow" id="dialog-eyebrow">NEW CLIENT RUN / 01</span><h2 id="dialog-title">Set the scope.</h2></div><button class="icon-button" type="button" data-action="close-dialog" aria-label="Close">×</button></div>
+      <p class="dialog-intro">A small, explicit scope makes a better first deliverable. Only add pages you have permission to test.</p>
+      <div class="form-grid">
+        <label>Project name<input name="name" required maxlength="120" placeholder="Northstar site review"></label>
+        <label>Client<input name="client_name" required maxlength="120" placeholder="Northstar Cafe"></label>
+        <label>Auditor name<input name="auditor" required maxlength="120" placeholder="Your name"></label>
+        <label>Site address<input name="base_url" type="url" required placeholder="https://client-site.com"></label>
+        <label class="full-field">Review scope<input name="scope" required maxlength="2000" placeholder="Public homepage, menu, and contact form"></label>
+        <label class="full-field">Pages to scan <span class="label-hint">ONE URL PER LINE · MAX 10</span><textarea name="pages" required rows="4" placeholder="https://client-site.com/&#10;https://client-site.com/menu"></textarea></label>
+      </div>
+      <p class="form-error" id="audit-form-error" role="alert"></p>
+      <div class="dialog-actions"><button class="button button-quiet" type="button" data-action="close-dialog">Cancel</button><button class="button button-primary" id="audit-submit" type="submit">CREATE AUDIT <span aria-hidden="true">↗</span></button></div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

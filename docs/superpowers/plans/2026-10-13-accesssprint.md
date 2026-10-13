@@ -48,12 +48,12 @@
 - `url_policy.is_public_address(address: str) -> bool` returns false for loopback, private, link-local, multicast, reserved, and unspecified IPs.
 - `config.DEFAULT_MODEL == "gemma4:e4b"`; `config.DEFAULT_HOST == "127.0.0.1"`.
 
-- [ ] **Step 1: Write failing URL policy tests** for valid HTTP/HTTPS URLs, whitespace trimming, unsupported schemes, malformed host, URL credentials, localhost names, private IPv4, private IPv6, and public IPv4/IPv6.
-- [ ] **Step 2: Run `python -m unittest tests.test_url_policy -v`** and verify it fails because `accesssprint.url_policy` is missing.
-- [ ] **Step 3: Implement the URL normalization and IP classification interfaces** in `accesssprint/url_policy.py`; do not perform network requests in this module.
-- [ ] **Step 4: Run `python -m unittest tests.test_url_policy -v`** and verify all URL policy cases pass.
-- [ ] **Step 5: Add minimal app/package scaffolding and verify** `python main.py --help` and `npm test` are wired without network access.
-- [ ] **Step 6: Commit** as `feat: scaffold AccessSprint and URL policy`.
+- [x] **Step 1: Write failing URL policy tests** for valid HTTP/HTTPS URLs, whitespace trimming, unsupported schemes, malformed host, URL credentials, localhost names, private IPv4, private IPv6, and public IPv4/IPv6.
+- [x] **Step 2: Run `python -m unittest tests.test_url_policy -v`** and verify it fails because `accesssprint.url_policy` is missing.
+- [x] **Step 3: Implement the URL normalization and IP classification interfaces** in `accesssprint/url_policy.py`; do not perform network requests in this module.
+- [x] **Step 4: Run `python -m unittest tests.test_url_policy -v`** and verify all URL policy cases pass.
+- [x] **Step 5: Add minimal app/package scaffolding and verify** `python main.py --help` and `npm test` are wired without network access.
+- [x] **Step 6: Commit** as `feat: scaffold AccessSprint and URL policy`.
 
 ### Task 2: Local audit storage and domain operations
 
@@ -68,11 +68,11 @@
 - `AuditService(store: Store)` exposes `create_audit(payload)`, `get_audit(audit_id)`, `list_audits()`, `update_audit(audit_id, payload)`, `archive_audit(audit_id, archived)`, `delete_audit(audit_id)`, `compare_scans(audit_id, baseline_id, current_id)`, `set_finding_review(audit_id, finding_id, status, note)`, and `set_manual_check(audit_id, check_id, status, note)`.
 - Review statuses are `needs_review`, `confirmed`, `fixed`, and `not_applicable`; manual statuses are `not_checked`, `pass`, and `issue`.
 
-- [ ] **Step 1: Write failing SQLite tests** for audit create/read/update/archive/delete, required fields, page cap, finding status changes, manual-check status changes, event timestamps, scan comparison, and persistence after reopening the database.
-- [ ] **Step 2: Run `python -m unittest tests.test_store tests.test_audits -v`** and verify the expected missing-module failures.
-- [ ] **Step 3: Implement the schema and service methods** with parameterized SQL, transactions for related writes, and generated IDs.
-- [ ] **Step 4: Run those tests** and verify all pass, including persistence through a temporary database file.
-- [ ] **Step 5: Commit** as `feat: add local audit storage`.
+- [x] **Step 1: Write failing SQLite tests** for audit create/read/update/archive/delete, required fields, page cap, finding status changes, manual-check status changes, event timestamps, scan comparison, and persistence after reopening the database.
+- [x] **Step 2: Run `python -m unittest tests.test_store tests.test_audits -v`** and verify the expected missing-module failures.
+- [x] **Step 3: Implement the schema and service methods** with parameterized SQL, transactions for related writes, and generated IDs.
+- [x] **Step 4: Run those tests** and verify all pass, including persistence through a temporary database file.
+- [x] **Step 5: Commit** as `feat: add local audit storage`.
 
 ### Task 3: Browser scan worker
 
@@ -91,12 +91,12 @@
 - `normalizeAxeResults(results, pageUrl) -> { violations, passes, incomplete }` emits bounded plain-data records; evidence fields are length-limited.
 - Worker invocation: `node scanner/worker.mjs <input-json-path> <output-json-path>`; input contains `runId` and normalized page URLs, output contains one explicit success/error result per page.
 
-- [ ] **Step 1: Write failing Node tests** for public and unsafe request URLs, private DNS answers, redirects, browser subrequests, axe result normalization, escaped/untrusted evidence, and per-page timeout results.
-- [ ] **Step 2: Run `npm test`** and verify failures are due to missing scanner modules.
-- [ ] **Step 3: Add pinned `playwright` and `axe-core` dependencies and implement the policy and normalizer**; apply route checks to every browser request, reject unsafe redirect destinations, use a fresh browser context, and set bounded navigation/action timeouts.
-- [ ] **Step 4: Implement worker execution** to navigate each supplied page, inject the local axe-core script, record rule and node evidence, and report failures without turning them into clean scans.
-- [ ] **Step 5: Run `npm test`** and verify unit tests pass; install Chromium and run `node --test tests-js/scanner.integration.test.mjs` against a local fixture page with known violations and a clean page.
-- [ ] **Step 6: Commit** as `feat: scan explicit pages with local axe-core`.
+- [x] **Step 1: Write failing Node tests** for public and unsafe request URLs, private DNS answers, redirects, browser subrequests, axe result normalization, escaped/untrusted evidence, and per-page timeout results.
+- [x] **Step 2: Run `npm test`** and verify failures are due to missing scanner modules.
+- [x] **Step 3: Add pinned `playwright` and `axe-core` dependencies and implement the policy and normalizer**; apply route checks to every browser request, reject unsafe redirect destinations, use a fresh browser context, and set bounded navigation/action timeouts.
+- [x] **Step 4: Implement worker execution** to navigate each supplied page, inject the local axe-core script, record rule and node evidence, and report failures without turning them into clean scans.
+- [x] **Step 5: Run `npm test`** and verify unit tests pass; install Chromium and run `node --test tests-js/scanner.integration.test.mjs` against a local fixture page with known violations and a clean page.
+- [x] **Step 6: Commit** as `feat: scan explicit pages with local axe-core`.
 
 ### Task 4: HTTP API, scan lifecycle, and local Gemma bridge
 
@@ -115,12 +115,12 @@
 - `OllamaClient(base_url, model, opener=...)` exposes `status()`, `test_connection()`, and `explain_finding(finding)`. The client only accepts loopback base URLs and a bounded structured response; its default model is `gemma4:e4b`.
 - `ScanService` persists a running scan, invokes the worker without a shell, stores per-page outcomes, normalizes findings, and records a completed/partial/failed state.
 
-- [ ] **Step 1: Write failing API and service tests** for route methods including archive, compare, settings and model test, malformed JSON, oversized bodies, unknown audit IDs, invalid statuses, safe subprocess argument passing, scan persistence, offline Ollama, missing model, timeout, malformed model output, and fixed-size request context.
-- [ ] **Step 2: Run `python -m unittest tests.test_api tests.test_scans tests.test_ollama -v`** and verify the expected missing-module failures.
-- [ ] **Step 3: Implement API validation and storage wiring** with JSON-only responses, request size limits, safe static-file path resolution, no shell invocation, and useful 4xx/5xx errors.
-- [ ] **Step 4: Implement scan lifecycle and Ollama client**; do not let AI responses mutate findings, review state, scan status, or severity.
-- [ ] **Step 5: Run backend tests** and verify all service states pass without requiring Ollama or Chromium.
-- [ ] **Step 6: Commit** as `feat: add audit and local Gemma APIs`.
+- [x] **Step 1: Write failing API and service tests** for route methods including archive, compare, settings and model test, malformed JSON, oversized bodies, unknown audit IDs, invalid statuses, safe subprocess argument passing, scan persistence, offline Ollama, missing model, timeout, malformed model output, and fixed-size request context.
+- [x] **Step 2: Run `python -m unittest tests.test_api tests.test_scans tests.test_ollama -v`** and verify the expected missing-module failures.
+- [x] **Step 3: Implement API validation and storage wiring** with JSON-only responses, request size limits, safe static-file path resolution, no shell invocation, and useful 4xx/5xx errors.
+- [x] **Step 4: Implement scan lifecycle and Ollama client**; do not let AI responses mutate findings, review state, scan status, or severity.
+- [x] **Step 5: Run backend tests** and verify all service states pass without requiring Ollama or Chromium.
+- [x] **Step 6: Commit** as `feat: add audit and local Gemma APIs`.
 
 ### Task 5: Interactive AccessSprint workspace
 
@@ -129,7 +129,11 @@
 - Create: `web/styles.css`
 - Create: `web/app.js`
 - Create: `web/api.js`
+- Create: `web/view-model.js`
 - Create: `tests-js/ui.test.mjs`
+- Create: `accesssprint/demo.py`
+- Modify: `accesssprint/store.py`
+- Modify: `tests/test_api.py`
 - Modify: `accesssprint/server.py`
 
 **Interfaces:**
@@ -137,12 +141,12 @@
 - Screens: welcome/demo, audit workspace, findings review, manual checks, compare scans, settings, and report preview.
 - Hackerish visual treatment uses near-black surfaces, green status indicators, compact monospace metadata, restrained scan animation, and high-contrast prose. Client reports use a separate calm print layout.
 
-- [ ] **Step 1: Write failing UI logic tests** for API error presentation, scan progress states, finding filters/status updates, safe text rendering of evidence, and report-summary counts.
-- [ ] **Step 2: Run `npm test`** and verify failures identify missing UI modules.
-- [ ] **Step 3: Implement the API client and interactive workspace** with semantic landmarks, labels, keyboard-operable controls, visible focus, reduced-motion behavior, responsive layout, loading/empty/error states, and a demo audit entry point.
-- [ ] **Step 4: Implement findings review, manual checklist, scan comparison, and model context inspection**; make all evidence text-only and show when Gemma is unavailable.
-- [ ] **Step 5: Run `npm test` and the browser interaction suite** for first-run setup, audit creation, scan progress/error handling, review updates, manual checks, and offline AI messaging.
-- [ ] **Step 6: Commit** as `feat: build interactive audit workspace`.
+- [x] **Step 1: Write failing UI logic tests** for API error presentation, scan progress states, finding filters/status updates, safe text rendering of evidence, and report-summary counts.
+- [x] **Step 2: Run `npm test`** and verify failures identify missing UI modules.
+- [x] **Step 3: Implement the API client and interactive workspace** with semantic landmarks, labels, keyboard-operable controls, visible focus, reduced-motion behavior, responsive layout, loading/empty/error states, and a demo audit entry point.
+- [x] **Step 4: Implement findings review, manual checklist, scan comparison, and model context inspection**; make all evidence text-only and show when Gemma is unavailable.
+- [x] **Step 5: Run `npm test` and the browser interaction suite** for first-run setup, audit creation, scan progress/error handling, review updates, manual checks, and offline AI messaging.
+- [x] **Step 6: Commit** — Task 5 is included in the integrated prototype commit because UI/API routes share the same server and client modules.
 
 ### Task 6: Client report and portable backups
 
@@ -160,11 +164,11 @@
 - `export_backup(audit: dict) -> dict` includes `formatVersion: 1`; `validate_backup(payload: dict) -> dict` rejects unknown versions and malformed structures before any database writes.
 - Report API: `GET /api/audits/{id}/report`; backup API: `GET /api/audits/{id}/backup` and `POST /api/backups/import`. The report preview’s “Save as PDF” action opens the browser print dialog with the print stylesheet.
 
-- [ ] **Step 1: Write failing report tests** for summary counts, incomplete pages, unresolved high-impact findings, manual coverage, certification disclaimer, escaping hostile labels/notes, and backup round-trip/invalid version.
-- [ ] **Step 2: Run report tests** and verify expected failures.
-- [ ] **Step 3: Implement report construction, print view, and backup validation/import** with strict field allowlists and no executable HTML from imported data; wire the report and backup endpoints and browser “Save as PDF” action.
-- [ ] **Step 4: Run Python and Node report tests** and verify print rendering and backup round trip.
-- [ ] **Step 5: Commit** as `feat: export client reports and audit backups`.
+- [x] **Step 1: Write failing report tests** for summary counts, incomplete pages, unresolved high-impact findings, manual coverage, certification disclaimer, escaping hostile labels/notes, and backup round-trip/invalid version.
+- [x] **Step 2: Run report tests** and verify expected failures.
+- [x] **Step 3: Implement report construction, print view, and backup validation/import** with strict field allowlists and no executable HTML from imported data; wire the report and backup endpoints and browser “Save as PDF” action.
+- [x] **Step 4: Run Python and Node report tests** and verify print rendering and backup round trip.
+- [x] **Step 5: Commit** — Task 6 is included in the integrated prototype commit with the UI and API wiring.
 
 ### Task 7: Install flow, documentation, and end-to-end verification
 
@@ -178,13 +182,13 @@
 - Launcher starts the app bound to loopback, opens `http://127.0.0.1:8000`, and keeps a visible server window for diagnostics.
 - README documents prerequisites, `npm ci`, Chromium install, Python invocation, Ollama setup with `gemma4:e4b`, data location, privacy behavior, limits, backups, and the live smoke checklist.
 
-- [ ] **Step 1: Write the end-to-end workflow test** for demo entry, audit creation, scan against a controlled local fixture, review a finding, complete a manual check, use offline Gemma state, export a report, and restore a JSON backup.
-- [ ] **Step 2: Run the workflow test** and verify it fails because the launch/documentation flow is incomplete.
-- [ ] **Step 3: Implement the launcher and docs**, including realistic troubleshooting for a missing Python executable, missing Chromium, offline Ollama, and absent `gemma4:e4b` tag.
-- [ ] **Step 4: Run all automated checks**: `python -m unittest discover -v`, `npm test`, and the Playwright integration/workflow suite. Fix every failure.
-- [ ] **Step 5: Perform live smoke checks** for local server health, Ollama model status and one real explanation if the model service is available, a permitted public website scan, report print preview, backup export/import, and localhost-only binding.
-- [ ] **Step 6: Inspect the finished UI in a browser at desktop and mobile widths**, including keyboard navigation and reduced-motion behavior; correct visible issues.
-- [ ] **Step 7: Commit** as `docs: finish AccessSprint setup and verification guide`.
+- [x] **Step 1: Write the end-to-end workflow test** for demo entry, audit creation, scan against a controlled local fixture, review a finding, complete a manual check, use offline Gemma state, export a report, and restore a JSON backup.
+- [x] **Step 2: Run the workflow test** and verify it fails because the launch/documentation flow is incomplete.
+- [x] **Step 3: Implement the launcher and docs**, including realistic troubleshooting for a missing Python executable, missing Chromium, offline Ollama, and absent `gemma4:e4b` tag.
+- [x] **Step 4: Run all automated checks**: `python -m unittest discover -v`, `npm test`, and the Playwright integration/workflow suite. Fix every failure.
+- [x] **Step 5: Perform live smoke checks** for local server health, Ollama model status and one real explanation if the model service is available, a permitted public website scan, report print preview, backup export/import, and localhost-only binding.
+- [x] **Step 6: Inspect the finished UI in a browser at desktop and mobile widths**, including keyboard navigation and reduced-motion behavior; correct visible issues.
+- [x] **Step 7: Commit** — Task 7 is included in the integrated prototype commit with the product deliverables.
 - [ ] **Step 8: Create the GitHub repository `soniksharma/ASprints` and push the verified `main` branch**; confirm the remote repository URL and pushed commit SHA.
 
 ## Self-Review
